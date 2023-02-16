@@ -4,7 +4,7 @@ import dash_html_components as html
 import folium
 from folium.plugins import MarkerCluster
 from sqlalchemy import create_engine
-from server import FlightDataAccessLayer
+from server import FlightDataAccessLayer, FlightPosition
 
 # Initialize the FlightDataAccessLayer
 dal = FlightDataAccessLayer("sqlite:///flights.db")
@@ -21,11 +21,10 @@ app.layout = html.Div(children=[
     ]),
     dcc.Interval(
         id='interval-component',
-        interval=5000*1000, # Update every 5 seconds
+        interval=60*1000, # Update every 5 seconds
         n_intervals=0
     )
 ])
-
 
 # Define the callback function to update the flight map
 @app.callback(
@@ -40,13 +39,16 @@ def update_flight_map(n):
     )
     marker_cluster = MarkerCluster().add_to(flight_map)
     for flight in flights:
-        if flight.latitude and flight.longitude:
+        positions = dal.get_latest_positions(flight.icao24, limit=5000)
+        lat_long = [[position.latitude, position.longitude] for position in positions]
+        if lat_long:
             popup_text = f"Flight: {flight.callsign or 'Unknown'}<br>Altitude: {flight.baro_altitude or 'Unknown'} meters"
             folium.Marker(
-                location=[flight.latitude, flight.longitude],
+                location=[positions[-1].latitude, positions[-1].longitude],
                 popup=popup_text,
                 icon=folium.Icon(color='red', icon='plane', prefix='fa')
             ).add_to(marker_cluster)
+            folium.PolyLine(locations=lat_long, color='blue', weight=2.5, opacity=1).add_to(flight_map)
     return flight_map._repr_html_()
 
 # Run the app

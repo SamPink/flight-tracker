@@ -63,6 +63,10 @@ class FlightDataAccessLayer:
         with self.SessionLocal() as session:
             session.add_all(flight_positions)
             session.commit()
+            
+    def get_latest_positions(self, icao24: str, limit: int = 100) -> List[FlightPosition]:
+        with self.SessionLocal() as session:
+            return session.query(FlightPosition).filter(FlightPosition.icao24 == icao24).order_by(FlightPosition.time_position.desc()).limit(limit).all()
 
 
 import requests
