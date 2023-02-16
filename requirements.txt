@@ -1,0 +1,9 @@
+fastapi
+pandas
+requests
+schedule
+sqlalchemy
+uvicorn
+dash
+plotly
+folium
